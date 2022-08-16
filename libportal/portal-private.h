@@ -54,6 +54,9 @@ struct _XdpPortal {
 
   /* background */
   guint background_interface_version;
+
+  /* remote desktop */
+  guint remote_desktop_interface_version;
 };
 
 const char * portal_get_bus_name (void);
