@@ -200,6 +200,9 @@ XDP_PUBLIC
 GVariant *      xdp_session_get_streams       (XdpSession *session);
 
 XDP_PUBLIC
+int       xdp_session_connect_to_eis    (XdpSession *session);
+
+XDP_PUBLIC
 void      xdp_session_pointer_motion    (XdpSession *session,
                                          double      dx,
                                          double      dy);

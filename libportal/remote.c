@@ -41,6 +41,68 @@ typedef struct {
   guint cancelled_id;
 } CreateCall;
 
+/**
+ * xdp_session_connect_to_eis
+ * @session: a [class@Session]
+ *
+ * Connect this XdpRemoteDesktopSession to an EIS implementation and return the fd.
+ * This fd can be passed into ei_setup_backend_fd(). See the libei
+ * documentation for details.
+ *
+ * This call must be issued before xdp_session_start(). If successful, all input
+ * event emulation must be handled via the EIS connection and calls to
+ * xdp_session_pointer_motion() etc. are silently ignored.
+ *
+ * Returns: the file descriptor to the EIS implementation or a negative errno
+ * on failure.
+ */
+int
+xdp_session_connect_to_eis(XdpSession *session)
+{
+  XdpPortal *portal = session->portal;
+  GVariantBuilder options;
+  g_autoptr(GVariant) ret = NULL;
+  g_autoptr(GError) error = NULL;
+  g_autoptr(GUnixFDList) fd_list = NULL;
+  int fd_out = -1;
+
+  g_return_val_if_fail (session->type == XDP_SESSION_REMOTE_DESKTOP, -EINVAL);
+  g_return_val_if_fail (xdp_session_get_session_state (session) == XDP_SESSION_INITIAL, -EBUSY);
+  g_return_val_if_fail (!session->uses_eis, -EALREADY);
+
+  if (portal->remote_desktop_interface_version < 2)
+    return -ENOTSUP;
+
+  g_variant_builder_init (&options, G_VARIANT_TYPE_VARDICT);
+
+  ret = g_dbus_connection_call_with_unix_fd_list_sync (portal->bus,
+                                                       PORTAL_BUS_NAME,
+                                                       PORTAL_OBJECT_PATH,
+                                                       "org.freedesktop.portal.RemoteDesktop",
+                                                       "ConnectToEIS",
+                                                       g_variant_new ("(oa{sv})",
+                                                                      session->id,
+                                                                      &options),
+                                                       NULL,
+                                                       G_DBUS_CALL_FLAGS_NONE,
+                                                       -1,
+                                                       NULL,
+                                                       &fd_list,
+                                                       NULL,
+                                                       &error);
+  if (!ret)
+    {
+      g_warning ("Failed to ConnectToEIS: %s", error->message);
+      return -ENODEV;
+    }
+
+  session->uses_eis = TRUE;
+
+  g_variant_get (ret, "(h)", &fd_out);
+
+  return g_unix_fd_list_get (fd_list, fd_out, NULL);
+}
+
 static void
 create_call_free (CreateCall *call)
 {
@@ -899,6 +961,7 @@ is_active_remotedesktop_session (XdpSession    *session,
   return XDP_IS_SESSION (session) &&
          session->type == XDP_SESSION_REMOTE_DESKTOP &&
          session->state == XDP_SESSION_ACTIVE &&
+         !session->uses_eis &&
          (session->devices & required_device) != 0;
 }
 

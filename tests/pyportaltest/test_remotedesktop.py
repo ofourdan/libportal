@@ -4,6 +4,7 @@
 
 from . import PortalTest
 
+import errno
 import dbus
 import gi
 import logging
@@ -33,7 +34,7 @@ class SessionSetup(NamedTuple):
 
 class TestRemoteDesktop(PortalTest):
     def test_version(self):
-        self.assert_version_eq(1)
+        self.assert_version_eq(2)
 
     def short_mainloop(self):
         """
@@ -413,6 +414,46 @@ class TestRemoteDesktop(PortalTest):
         _, args = method_calls.pop(0)
         session_handle, options, slot = args
         assert slot == 10
+
+    def test_connect_to_eis_v1(self):
+        params = {"version": 1}
+        setup = self.create_session(params=params, start_session=False)
+        session = setup.session
+
+        err = session.connect_to_eis()
+        assert err == -errno.ENOTSUP
+
+    def test_connect_to_eis(self):
+        setup = self.create_session(start_session=False)
+        session = setup.session
+        handle = session.connect_to_eis()
+        assert handle
+
+        fd = os.fdopen(handle)
+        buf = fd.read()
+        assert buf == "VANILLA"  # template sends this by default
+
+        method_calls = self.mock_interface.GetMethodCalls("ConnectToEIS")
+        assert len(method_calls) == 1
+        _, args = method_calls.pop(0)
+        session_handle, options = args
+        assert "handle_token" not in options  # this is not a Request
+        assert list(options.keys()) == []
+
+    def test_connect_to_eis_fail_reconnect(self):
+        setup = self.create_session(start_session=False)
+        session = setup.session
+        handle = session.connect_to_eis()
+        assert handle
+
+        err = session.connect_to_eis()
+        assert err == -errno.EALREADY
+
+    def test_connect_to_eis_fail_connect_after_start(self):
+        setup = self.create_session(start_session=True)
+        session = setup.session
+        err = session.connect_to_eis()
+        assert err == -errno.EBUSY
 
     def test_close_session(self):
         """
