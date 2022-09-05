@@ -555,7 +555,7 @@ class TestInputCapture(PortalTest):
 
         disabled_signal_received = False
 
-        def session_disabled(session):
+        def session_disabled(session, options):
             nonlocal disabled_signal_received
             disabled_signal_received = True
             self.mainloop.quit()

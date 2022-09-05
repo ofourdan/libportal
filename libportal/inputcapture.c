@@ -183,6 +183,7 @@ xdp_input_capture_session_class_init (XdpInputCaptureSessionClass *klass)
   /**
    * XdpInputCaptureSession::disabled:
    * @session: the [class@InputCaptureSession]
+   * @options: a GVariant with the signal options
    *
    * Emitted when an InputCapture session is disabled. This signal
    * is emitted when capturing was disabled by the server.
@@ -194,7 +195,8 @@ xdp_input_capture_session_class_init (XdpInputCaptureSessionClass *klass)
                   0,
                   NULL, NULL,
                   NULL,
-                  G_TYPE_NONE, 0);
+                  G_TYPE_NONE, 1,
+                  G_TYPE_VARIANT);
 }
 
 static void
@@ -452,7 +454,7 @@ disabled (GDBusConnection *bus,
   if (!handle_matches_session (session, handle))
           return;
 
-  g_signal_emit (session, signals[SIGNAL_DISABLED], 0, NULL);
+  g_signal_emit (session, signals[SIGNAL_DISABLED], 0, options);
 }
 
 static XdpInputCaptureSession *
