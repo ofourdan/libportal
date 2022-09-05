@@ -42,7 +42,7 @@ enum
   PROP_X,
   PROP_Y,
   PROP_ZONE_SET,
-  PROP_VALID,
+  PROP_IS_VALID,
 
   N_PROPERTIES
 };
@@ -96,7 +96,7 @@ xdp_input_capture_zone_get_property (GObject    *object,
       case PROP_ZONE_SET:
         g_value_set_uint (value, zone->zone_set);
         break;
-      case PROP_VALID:
+      case PROP_IS_VALID:
         g_value_set_boolean (value, zone->is_valid);
         break;
       default:
@@ -130,7 +130,7 @@ xdp_input_capture_zone_set_property (GObject    *object,
       case PROP_ZONE_SET:
         zone->zone_set = g_value_get_uint (value);
         break;
-      case PROP_VALID:
+      case PROP_IS_VALID:
         zone->is_valid = g_value_get_boolean (value);
         break;
       default:
@@ -220,7 +220,7 @@ xdp_input_capture_zone_class_init (XdpInputCaptureZoneClass *klass)
    * Once invalidated, a Zone can be discarded by the caller, it cannot become
    * valid again.
    */
-  zone_properties[PROP_VALID] =
+  zone_properties[PROP_IS_VALID] =
         g_param_spec_boolean ("is-valid",
                               "validity check",
                               "True if this zone is currently valid",
