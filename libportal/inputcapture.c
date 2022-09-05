@@ -148,6 +148,7 @@ xdp_input_capture_session_class_init (XdpInputCaptureSessionClass *klass)
   /**
    * XdpInputCaptureSession::activated:
    * @session: the [class@InputCaptureSession]
+   * @activation_id: the unique activation_id to identify this input capture
    * @options: a GVariant with the signal options
    *
    * Emitted when an InputCapture session activates and sends events. When this
@@ -160,11 +161,13 @@ xdp_input_capture_session_class_init (XdpInputCaptureSessionClass *klass)
                   0,
                   NULL, NULL,
                   NULL,
-                  G_TYPE_NONE, 1,
+                  G_TYPE_NONE, 2,
+                  G_TYPE_UINT,
                   G_TYPE_VARIANT);
   /**
    * XdpInputCaptureSession::deactivated:
    * @session: the [class@InputCaptureSession]
+   * @activation_id: the unique activation_id to identify this input capture
    * @options: a GVariant with the signal options
    *
    * Emitted when an InputCapture session deactivates and no longer sends
@@ -177,7 +180,8 @@ xdp_input_capture_session_class_init (XdpInputCaptureSessionClass *klass)
                   0,
                   NULL, NULL,
                   NULL,
-                  G_TYPE_NONE, 1,
+                  G_TYPE_NONE, 2,
+                  G_TYPE_UINT,
                   G_TYPE_VARIANT);
 
   /**
@@ -405,14 +409,18 @@ activated (GDBusConnection *bus,
 {
   XdpInputCaptureSession *session = XDP_INPUT_CAPTURE_SESSION (data);
   g_autoptr(GVariant) options = NULL;
+  guint32 activation_id = 0;
   const char *handle = NULL;
 
-  g_variant_get(parameters, "(o@a{sv})", &handle, &options);
+  g_variant_get (parameters, "(o@a{sv})", &handle, &options);
+  /* FIXME: we should remove the activation_id from options, but ... meh? */
+  if (!g_variant_lookup (options, "activation_id", "u", &activation_id))
+    g_error ("Portal bug: activation_id missing from Activated signal");
 
   if (!handle_matches_session (session, handle))
     return;
 
-  g_signal_emit (session, signals[SIGNAL_ACTIVATED], 0, options);
+  g_signal_emit (session, signals[SIGNAL_ACTIVATED], 0, activation_id, options);
 }
 
 static void
@@ -426,14 +434,18 @@ deactivated (GDBusConnection *bus,
 {
   XdpInputCaptureSession *session = XDP_INPUT_CAPTURE_SESSION (data);
   g_autoptr(GVariant) options = NULL;
+  guint32 activation_id = 0;
   const char *handle = NULL;
 
   g_variant_get(parameters, "(o@a{sv})", &handle, &options);
+  /* FIXME: we should remove the activation_id from options, but ... meh? */
+  if (!g_variant_lookup (options, "activation_id", "u", &activation_id))
+    g_error ("Portal bug: activation_id missing from Activated signal");
 
   if (!handle_matches_session (session, handle))
     return;
 
-  g_signal_emit (session, signals[SIGNAL_DEACTIVATED], 0, options);
+  g_signal_emit (session, signals[SIGNAL_DEACTIVATED], 0, activation_id, options);
 }
 
 static void
@@ -1102,6 +1114,7 @@ xdp_input_capture_session_disable (XdpInputCaptureSession *session)
 
 static void
 release_session (XdpInputCaptureSession   *session,
+                 guint                     activation_id,
                  gboolean                  with_position,
                  gdouble                   x,
                  gdouble                   y)
@@ -1112,6 +1125,7 @@ release_session (XdpInputCaptureSession   *session,
   g_return_if_fail (_xdp_input_capture_session_is_valid (session));
 
   g_variant_builder_init (&options, G_VARIANT_TYPE_VARDICT);
+  g_variant_builder_add (&options, "{sv}", "activation_id", g_variant_new_uint32 (activation_id));
 
   if (with_position)
     {
@@ -1145,11 +1159,12 @@ release_session (XdpInputCaptureSession   *session,
  * Releases this input capture session without a suggested cursor position.
  */
 void
-xdp_input_capture_session_release (XdpInputCaptureSession *session)
+xdp_input_capture_session_release (XdpInputCaptureSession *session,
+                                   guint                   activation_id)
 {
   g_return_if_fail (_xdp_input_capture_session_is_valid (session));
 
-  release_session (session, FALSE, 0, 0);
+  release_session (session, activation_id, FALSE, 0, 0);
 }
 
 /**
@@ -1163,10 +1178,11 @@ xdp_input_capture_session_release (XdpInputCaptureSession *session)
  */
 void
 xdp_input_capture_session_release_at (XdpInputCaptureSession *session,
+                                      guint                   activation_id,
                                       gdouble                 cursor_x_position,
                                       gdouble                 cursor_y_position)
 {
   g_return_if_fail (_xdp_input_capture_session_is_valid (session));
 
-  release_session (session, TRUE, cursor_x_position, cursor_y_position);
+  release_session (session, activation_id, TRUE, cursor_x_position, cursor_y_position);
 }

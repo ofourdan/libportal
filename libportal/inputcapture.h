@@ -90,10 +90,13 @@ void        xdp_input_capture_session_disable (XdpInputCaptureSession *session);
 
 XDP_PUBLIC
 void        xdp_input_capture_session_release_at (XdpInputCaptureSession *session,
+                                                  guint                   activation_id,
                                                   gdouble                 cursor_x_position,
                                                   gdouble                 cursor_y_position);
+
 XDP_PUBLIC
-void        xdp_input_capture_session_release (XdpInputCaptureSession *session);
+void        xdp_input_capture_session_release (XdpInputCaptureSession *session,
+                                               guint activation_id);
 
 XDP_PUBLIC
 int        xdp_input_capture_session_connect_to_eis (XdpInputCaptureSession *session);

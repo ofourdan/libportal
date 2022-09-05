@@ -401,7 +401,7 @@ class TestInputCapture(PortalTest):
 
         session.enable()
         session.disable()
-        session.release()
+        session.release(activation_id=456)  # fake id, doesn't matter here
 
         self.mainloop.run()
 
@@ -422,7 +422,7 @@ class TestInputCapture(PortalTest):
         assert len(method_calls) == 1
         _, args = method_calls.pop(0)
         session_handle, options = args
-        assert list(options.keys()) == []
+        assert list(options.keys()) == ["activation_id"]
 
     def test_release_at(self):
         """
@@ -434,8 +434,11 @@ class TestInputCapture(PortalTest):
         setup = self.create_session_with_barriers(params)
         session = setup.session
 
-        # libportal allows us to call Release without Enable first
-        session.release_at(cursor_x_position=10, cursor_y_position=10)
+        # libportal allows us to call Release without Enable first,
+        # we just fake an activation_id
+        session.release_at(
+            activation_id=456, cursor_x_position=10, cursor_y_position=10
+        )
         self.mainloop.run()
 
         # Now verify our DBus calls were correct
@@ -443,7 +446,7 @@ class TestInputCapture(PortalTest):
         assert len(method_calls) == 1
         _, args = method_calls.pop(0)
         session_handle, options = args
-        assert list(options.keys()) == ["cursor_position"]
+        assert list(options.keys()) == ["activation_id", "cursor_position"]
         cursor_position = options["cursor_position"]
         assert cursor_position == (10.0, 10.0)
 
@@ -468,16 +471,22 @@ class TestInputCapture(PortalTest):
         session_deactivated_signal_received = False
         signal_activated_options = None
         signal_deactivated_options = None
+        signal_activation_id = None
+        signal_deactivation_id = None
 
-        def session_activated(session, opts):
-            nonlocal session_activated_signal_received, signal_activated_options
+        def session_activated(session, activation_id, opts):
+            nonlocal session_activated_signal_received
+            nonlocal signal_activation_id, signal_activated_options
             session_activated_signal_received = True
             signal_activated_options = opts
+            signal_activation_id = activation_id
 
-        def session_deactivated(session, opts):
-            nonlocal session_deactivated_signal_received, signal_deactivated_options
+        def session_deactivated(session, activation_id, opts):
+            nonlocal session_deactivated_signal_received
+            nonlocal signal_deactivation_id, signal_deactivated_options
             session_deactivated_signal_received = True
             signal_deactivated_options = opts
+            signal_deactivation_id = activation_id
             self.mainloop.quit()
 
         session.connect("activated", session_activated)
@@ -488,6 +497,7 @@ class TestInputCapture(PortalTest):
 
         assert session_activated_signal_received
         assert signal_activated_options is not None
+        assert signal_activation_id == 123
         assert list(signal_activated_options.keys()) == [
             "activation_id",
             "cursor_position",
@@ -499,6 +509,7 @@ class TestInputCapture(PortalTest):
 
         assert session_deactivated_signal_received
         assert signal_deactivated_options is not None
+        assert signal_deactivation_id == 123
         assert list(signal_deactivated_options.keys()) == [
             "activation_id",
             "cursor_position",
