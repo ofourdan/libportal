@@ -201,6 +201,8 @@ def GetZones(self, session_handle: str, options: ASVType, sender: str):
 
             GLib.timeout_add(self.change_zones_after, change_zones)
 
+            self.change_zones_after = 0  # Zones only change once
+
         return request.handle
     except Exception as e:
         logger.critical(e)
