@@ -18,9 +18,13 @@
  */
 
 #include "inputcapture-pointerbarrier.h"
+#include "inputcapture-zone.h"
 
 int
 _xdp_input_capture_pointer_barrier_get_id (XdpInputCapturePointerBarrier *barrier);
 
 void
 _xdp_input_capture_pointer_barrier_set_is_active (XdpInputCapturePointerBarrier *barrier, gboolean active);
+
+void
+_xdp_input_capture_zone_invalidate_and_free  (XdpInputCaptureZone *zone);

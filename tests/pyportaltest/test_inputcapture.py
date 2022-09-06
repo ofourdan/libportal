@@ -534,14 +534,25 @@ class TestInputCapture(PortalTest):
 
         signal_received = False
         signal_options = None
+        zone_props = {z: None for z in setup.zones}
 
         def zones_changed(session, opts):
-            nonlocal signal_received, signal_options
+            nonlocal signal_received, signal_options, zone_props
             signal_received = True
             signal_options = opts
-            self.mainloop.quit()
+            if signal_received and all([v == False for v in zone_props.values()]):
+                self.mainloop.quit()
 
         session.connect("zones-changed", zones_changed)
+
+        def zones_is_valid_changed(zone, pspec):
+            nonlocal zone_props, signal_received
+            zone_props[zone] = zone.props.is_valid
+            if signal_received and all([v == False for v in zone_props.values()]):
+                self.mainloop.quit()
+
+        for z in setup.zones:
+            z.connect("notify::is-valid", zones_is_valid_changed)
 
         self.mainloop.run()
 
@@ -551,6 +562,7 @@ class TestInputCapture(PortalTest):
         assert signal_options["zone_set"] == 567
 
         assert all([z.props.zone_set == 568 for z in session.get_zones()])
+        assert all([v == False for v in zone_props.values()])
 
     def test_disabled(self):
         """

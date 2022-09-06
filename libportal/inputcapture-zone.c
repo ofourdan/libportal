@@ -225,7 +225,7 @@ xdp_input_capture_zone_class_init (XdpInputCaptureZoneClass *klass)
                               "validity check",
                               "True if this zone is currently valid",
                               TRUE,
-                              G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
+                              G_PARAM_READWRITE);
 
   g_object_class_install_properties (object_class,
                                      N_PROPERTIES,
@@ -235,4 +235,11 @@ xdp_input_capture_zone_class_init (XdpInputCaptureZoneClass *klass)
 static void
 xdp_input_capture_zone_init (XdpInputCaptureZone *zone)
 {
+}
+
+void
+_xdp_input_capture_zone_invalidate_and_free (XdpInputCaptureZone *zone)
+{
+  g_object_set (zone, "is-valid", FALSE, NULL);
+  g_object_unref (zone);
 }

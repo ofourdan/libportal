@@ -326,7 +326,7 @@ set_zones (XdpInputCaptureSession *session, GVariant *zones, guint zone_set)
         list = g_list_append (list, z);
     }
 
-  g_list_free_full (g_steal_pointer (&session->zones), g_object_unref);
+  g_list_free_full (g_steal_pointer (&session->zones), (GDestroyNotify)_xdp_input_capture_zone_invalidate_and_free);
   session->zones = list;
   session->zone_set = zone_set;
 }
