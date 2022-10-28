@@ -413,9 +413,10 @@ activated (GDBusConnection *bus,
   const char *handle = NULL;
 
   g_variant_get (parameters, "(o@a{sv})", &handle, &options);
+
   /* FIXME: we should remove the activation_id from options, but ... meh? */
   if (!g_variant_lookup (options, "activation_id", "u", &activation_id))
-    g_error ("Portal bug: activation_id missing from Activated signal");
+    g_warning ("Portal bug: activation_id missing from Activated signal");
 
   if (!handle_matches_session (session, handle))
     return;
@@ -440,7 +441,7 @@ deactivated (GDBusConnection *bus,
   g_variant_get(parameters, "(o@a{sv})", &handle, &options);
   /* FIXME: we should remove the activation_id from options, but ... meh? */
   if (!g_variant_lookup (options, "activation_id", "u", &activation_id))
-    g_error ("Portal bug: activation_id missing from Activated signal");
+    g_warning ("Portal bug: activation_id missing from Deactivated signal");
 
   if (!handle_matches_session (session, handle))
     return;
