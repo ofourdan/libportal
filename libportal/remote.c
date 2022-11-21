@@ -67,7 +67,7 @@ xdp_session_connect_to_eis(XdpSession *session)
   int fd_out = -1;
 
   g_return_val_if_fail (session->type == XDP_SESSION_REMOTE_DESKTOP, -EINVAL);
-  g_return_val_if_fail (xdp_session_get_session_state (session) == XDP_SESSION_INITIAL, -EBUSY);
+  g_return_val_if_fail (xdp_session_get_session_state (session) == XDP_SESSION_ACTIVE, -EBUSY);
   g_return_val_if_fail (!session->uses_eis, -EALREADY);
 
   if (portal->remote_desktop_interface_version < 2)
